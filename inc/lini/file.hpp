@@ -26,7 +26,7 @@ namespace LINI
     {
         std::unordered_map<std::string, Section> sections;
 
-        void parse(std::stringstream&);
+        File& parse(std::string_view);
         void dump(std::stringstream&);
     };
 };

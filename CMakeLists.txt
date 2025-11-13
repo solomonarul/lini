@@ -22,3 +22,8 @@ set_target_properties(
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS ON
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -fno-exceptions>
+    $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -Werror -fno-exceptions>
+)

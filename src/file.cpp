@@ -28,24 +28,27 @@ void File::dump(std::stringstream& out)
     }
 }
 
-void File::parse(std::stringstream& in)
+File& File::parse(std::string_view in)
 {
-    std::string line, section_name;
+    size_t start = 0, end = 0;
+    std::string section_name;
 
-    auto whitespace_trim = [](std::string& s) {
-        s.erase(0, s.find_first_not_of(" \t\r\n"));
-        s.erase(s.find_last_not_of(" \t\r\n") + 1);
+    auto trim_view = [](std::string_view s) -> std::string_view {
+        size_t first = s.find_first_not_of(" \t\r\n");
+        if (first == std::string_view::npos) return {};
+        size_t last = s.find_last_not_of(" \t\r\n");
+        return s.substr(first, last - first + 1);
     };
 
-    while(std::getline(in, line))
+    while((end = in.find('\n', start)) != std::string_view::npos)
     {
-        whitespace_trim(line);
+        std::string_view line = trim_view(in.substr(start, end - start)); start = end + 1;
 
-        // Skip comments
+        // Skip comments and empty lines.
         if (line.empty() || line[0] == ';' || line[0] == '#')
             continue;
 
-        // New section.
+        // New active section.
         if (line.front() == '[' && line.back() == ']')
         {
             section_name = line.substr(1, line.size() - 2);
@@ -54,16 +57,12 @@ void File::parse(std::stringstream& in)
 
         // Entry.
         auto pos = line.find('=');
-        if (pos == std::string::npos) continue; // TODO: Has no '=', maybe malformed.
+        if (pos == std::string::npos) continue; // TODO: Has no '=', maybe malformed, ignore for now.
 
-        std::string key = line.substr(0, pos);
-        std::string value = line.substr(pos + 1);
-        whitespace_trim(key);
-        whitespace_trim(value);
-
-        if(!sections.contains(section_name))
-            sections[section_name] = Section();
-
-        sections[section_name].entries[key].data = value;
+        // Save the <key, value> pair.
+        std::string_view key = trim_view(line.substr(0, pos)), value = trim_view(line.substr(pos + 1));
+        sections.try_emplace(section_name, Section{}).first->second
+        .entries.try_emplace(std::string(key), StringData{std::string(value)});
     }
+    return *this;
 }
